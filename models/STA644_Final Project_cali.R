@@ -22,6 +22,7 @@ library(maptools)
 
 # Reading in the earthquakes data for the California
 cali = fread("cali_df.csv")
+chile = fread("chile_df.csv")
 
 # names(cali)[2:3] = c("lat", "long")
 
@@ -83,13 +84,13 @@ mexico_map = world_map %>%
 both_map = bind_rows(cali_map, mexico_map)
 
 # Plotting magnitude
-ggplot() +
-  geom_map(data = both_map, map = both_map, aes(map_id = region),
-           color = "black", fill = "white") +
-  geom_point(data = cali, aes(x = longitude, y = latitude, color = mag), alpha = .5) +
-  scale_color_continuous(low = "grey", high = "red") +
-  scale_size(range = c(2, 6)) +
-  coord_fixed(1.3)
+# ggplot() +
+#   geom_map(data = both_map, map = both_map, aes(map_id = region),
+#            color = "black", fill = "white") +
+#   geom_point(data = cali, aes(x = longitude, y = latitude, color = mag), alpha = .5) +
+#   scale_color_continuous(low = "grey", high = "red") +
+#   scale_size(range = c(2, 6)) +
+#   coord_fixed(1.3)
 
 
 # Getting the coordinates of our data
@@ -101,7 +102,7 @@ w = dist(coords) %>%
   as.matrix()
 
 # Calculating Moran's I
-moransI = morans_I(y = cali$depth, w = w)
+moransI = morans_I(y = cali$mag, w = w)
 
 ############### VARIOGRAM ################
 
@@ -109,7 +110,7 @@ moransI = morans_I(y = cali$depth, w = w)
 cali_samp = cali[sample(1:nrow(cali), 100), ]
 
 # Getting the coordinates of our data
-coords = cali_samp[, .(longitude, latitude)] %>% 
+coords = cali_samp[, .(latitude, longitude)] %>% 
   as.matrix()
 
 # Calculating the distances between points
@@ -117,12 +118,12 @@ d = dist(coords) %>%
   as.matrix()
 
 # Calculating and plotting the variogram
-variog(coords = coords, data = cali_samp$depth, messages = FALSE,
-       uvec = seq(0, max(d)/2, length.out = 50)) %>%
-  plot()
+ variog(coords = coords, data = cali_samp$mag, messages = FALSE,
+        uvec = seq(0, max(d)/2, length.out = 25)) %>%
+   plot()
 
 # # Checking for anisotrophy
-# v4 = variog4(coords = coords, data = cali_samp$depth, messages = FALSE,
+# v4 = variog4(coords = coords, data = cali_samp$mag, messages = FALSE,
 #              uvec = seq(0, max(d)/2, length.out = 50))
 # plot(v4)
 
@@ -149,7 +150,7 @@ beta_cov = diag(1000, p)
 # Starting values for our Bayesian sampler
 starting = list(phi = 3/3, sigma.sq = 1, tau.sq = 1)
 # Tuning values
-tuning = list("phi" = 0.025, "sigma.sq" = 0.025, "tau.sq" = 0.025)
+tuning = list("phi" = 0.03, "sigma.sq" = 0.03, "tau.sq" = 0.03)
 # Priors for our Bayesian Sampler
 priors = list(
   beta.Norm = list(rep(0, p), beta_cov),
@@ -169,14 +170,14 @@ m = spLM(form, data = cali_samp, coords = coords,
 samples = spRecover(m, start = n_samp/2 + 1)
 
 # Posterior analysis
-samples$p.theta.samples %>% 
-  mcmc() %>%
-  plot()
-
-# Posterior distribution of beta
-samples$p.beta.recover.samples %>%
-  mcmc() %>%
-  plot()
+# samples$p.theta.samples %>% 
+#   mcmc() %>%
+#   plot()
+# 
+# # Posterior distribution of beta
+# samples$p.beta.recover.samples %>%
+#   mcmc() %>%
+#   plot()
 
 # Posterior summaries
 samples$p.beta.recover.samples %>%
@@ -189,14 +190,21 @@ data(wrld_simpl)
 r = raster(nrows = 75, ncol = 75,
            xmn = min(cali_samp$longitude) * 1.05, xmx = max(cali_samp$longitude) * 0.95,
            ymn = min(cali_samp$latitude) * 0.95, ymx = max(cali_samp$latitude) * 1.05)
+
+pred_coords = expand.grid(x = seq(min(cali_samp$longitude) * 1.05, 
+                                  max(cali_samp$longitude) * 0.95, length.out = 75),
+                          y = seq(min(cali_samp$latitude) * 0.95, 
+                                  max(cali_samp$latitude) * 1.05, length.out = 75))
 # Rasterizing the cali portion of the world map
-cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
+# cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
+# r_raster = rasterize(r)
 
 # Stripping empty portions?
 # cells = which(is.na(cali_raster[]) == FALSE)
-cells = which(is.na(cali_raster[]) == FALSE)
+# cells = which(is.na(cali_raster[]) == FALSE)
 # Getting the cooridinates from the raster
-pred_coords = xyFromCell(r, cells)
+# pred_coords = xyFromCell(r)
+
 
 # Predicting on the raster
 # pred = spPredict(samples, pred_coords, pred.covars = matrix(1, nrow = nrow(pred_coords)),
@@ -212,7 +220,7 @@ pred_summary = post_summary(t(pred$p.y.predictive.samples))
 
 # The raster
 splm_pred = r
-splm_pred[cells] = pred_summary$post_mean
+splm_pred[1:nrow(pred_coords)] = pred_summary$post_mean
 
 plot(splm_pred)
 points(coords, pch=16, cex=0.5)
