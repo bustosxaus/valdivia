@@ -13,5 +13,15 @@ cali_df = cali_5 %>%
   filter(longitude > -125, longitude < -100, 
          latitude > 15, latitude < 42.5)
 
+# 10 years of greater than 2.5 magnitude 
+
+# 1 year of all magnitudes
+bayarea = read.csv("datasets/bayarea3.csv") %>%
+  filter(mag > 0)
+bayarea$time = ymd_hms(bayarea$time)
+bayarea_df = bayarea %>%
+  filter(month(time) %in% 1:6)
+
+
 write.csv(cali_df, "datasets/cali_df.csv")
 write.csv(chile_df, "datasets/chile_df.csv")
