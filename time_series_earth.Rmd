@@ -1,3 +1,17 @@
+---
+title: "time_series_earth"
+author: "Gonzalo Bustos"
+date: "5/1/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Just looking at the time component of the data does not seem to achieve any valuable insights. Starting with the series for earthquakes in Chile from 2004 to 2017, the following plots are obtained:
+
+```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(forecast)
 library(zoo)
@@ -15,14 +29,22 @@ chile0417 = earth %>%
 chile0417_zoo = read.zoo(chile0417)
 
 ggtsdisplay(chile0417_zoo, main='Chile 2004-2017')
+```
 
+Running an Arima model with the `forecast` project:
+
+```{r}
 auto.arima(chile0417_zoo)
 
 model1 = Arima(chile0417_zoo, order = c(5, 1, 0))
 
-model1 %>% residuals() %>% tsdisplay(points = F, 
+model1 %>% residuals() %>% ggtsdisplay(points = F, 
                                      main = paste('AIC:', round(model1$aic)))
+```
 
+Comparing with the series for the last 5 years in Chile:
+
+```{r}
 #chile 5 years
 earth = read.csv('datasets/chile_df.csv')
 
@@ -35,14 +57,17 @@ chile5 = earth %>%
 chile5_zoo = read.zoo(chile5)
 
 ggtsdisplay(chile5_zoo, main='Chile last 5 years')
+```
 
+Running the `auto.arima` function does not provide any insights on the time components:
+
+```{r}
 auto.arima(chile5_zoo)
+```
 
-model2 = Arima(chile5_zoo, order = c(0, 0, 0))
+So, depending on the time frame selected, different Arima models are obtained, and it seems hard to pick up a signal from the magnitudes across time. There was a fairly big earthquake in Chile in March 2010, looking at the earthquake time series for 2009 and 2010, the following plots are obtained:
 
-model2 %>% residuals() %>% tsdisplay(points = F, 
-                                     main = paste('AIC:', round(model2$aic)))
-
+```{r}
 #filtering two years
 earth = read.csv('datasets/chile_2004_today.csv')
 
@@ -56,48 +81,18 @@ chile_2year = earth %>%
 chile2year_zoo = read.zoo(chile_2year)
 
 ggtsdisplay(chile2year_zoo, main='Chile 2009 and 2010')
+```
 
+An Arima model on this last time series provides a third set of time components, so without the spatial component, time analysis does not seem appropriate:
+
+```{r}
 auto.arima(chile2year_zoo)
 
 model3 = Arima(chile2year_zoo, order = c(1, 1, 1))
 
 model3 %>% residuals() %>% ggtsdisplay(points = F, 
                                      main = paste('AIC:', round(model3$aic)))
-
-#california 2004-2017
-earth = read.csv('datasets/cali_df.csv')
-
-california5 = earth %>%
-    select(time, mag) %>%
-    mutate(time=date(time)) %>%
-    arrange(time, -mag) %>%
-    filter (!duplicated (time))
-
-california5_zoo = read.zoo(california5)
-
-tsdisplay(california5_zoo, main='California last 5 years')
-
-auto.arima(california5_zoo)
-
-model4 = Arima(california5_zoo, order = c(5, 1, 0))
-
-model4 %>% residuals() %>% tsdisplay(points = F, 
-                                     main = paste('AIC:', round(model4$aic)))
+```
 
 
 
-
-#playing with prophet 
-library(prophet)
-
-chile_prophet2 = chile_prophet %>% rename(ds=time, y=mag)
-
-prophet_model = prophet(chile_prophet2)
-
-prophet_future = make_future_dataframe(prophet_model, periods = 365)
-
-prophet_forecast = predict(prophet_model, prophet_future)
-
-plot(prophet_model, prophet_forecast)
-
-prophet_plot_components(prophet_model, prophet_forecast)
