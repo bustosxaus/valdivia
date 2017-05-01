@@ -21,7 +21,8 @@ library(spBayes)
 library(maptools)
 
 # Reading in the earthquakes data for the California
-cali = fread("cali_df.csv")[mag > 4.5, ]
+# cali = fread("cali_df.csv")[mag > 4.5, ]
+cali = fread("bayarea.csv")
 # chile = fread("chile_df.csv")
 
 # names(cali)[2:3] = c("lat", "long")
@@ -132,7 +133,7 @@ d = dist(coords) %>%
 # Number of observations in the data
 n = cali_samp[, .N]
 # Number of MCMC samples
-n_samp = 2000
+n_samp = 20000
 # Max range 
 max_range = max(d) / 4
 
@@ -155,7 +156,7 @@ tuning = list("phi" = 0.03, "sigma.sq" = 0.03, "tau.sq" = 0.03)
 # Priors for our Bayesian Sampler
 priors = list(
   beta.Norm = list(rep(0, p), beta_cov),
-  phi.Unif = c(3/max_range, 6),
+  phi.Unif = c(max_range, 6),
   sigma.sq.IG = c(2, 2),
   tau.sq.IG = c(2, 2)
 )
@@ -188,7 +189,7 @@ samples$p.beta.recover.samples %>%
 # Reading in the world map spatial dataset
 data(wrld_simpl)
 # Creating a raster for the region we care about
-r = raster(nrows = 75, ncol = 75,
+r = raster(nrows = 200, ncol = 200,
            xmn = min(cali_samp$longitude) * 1.05, xmx = max(cali_samp$longitude) * 0.95,
            ymn = min(cali_samp$latitude) * 0.95, ymx = max(cali_samp$latitude) * 1.05)
 
@@ -209,9 +210,10 @@ pred_coords = xyFromCell(r, cells)
 # Predicting on the raster
 # pred = spPredict(samples, pred_coords, pred.covars = matrix(1, nrow = nrow(pred_coords)),
 #                  start = n_samp/2 + 1, thin = (n_samp/2) / 1000)
+
 pred = spPredict(samples, pred_coords,
                  pred.covars = matrix(1, nrow = nrow(pred_coords), ncol = ncol(beta_cov)),
-                 start = n_samp/2 + 1)
+                 start = n_samp - 100)
 # pred = spPredict(samples, coords,
 #                  pred.covars = model.matrix(mag ~ 1 + depth, data = cali_samp),
 #                  start = n_samp/2 + 1)
@@ -223,7 +225,7 @@ splm_pred = r
 splm_pred[cells] = pred_summary$post_mean
 # splm_pred[1:nrow(pred_coords)] = pred_summary$post_mean
 
-plot(splm_pred)
+plot(splm_pred, xlim = c(-122.5, -121.25), ylim = c(36.8, 38))
 points(coords, pch=16, cex=0.5)
 
 
