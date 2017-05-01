@@ -1,0 +1,286 @@
+---
+title: "final_project"
+author: "Sarah Normoyle, Drew Jordan, Gonzalo Bustos"
+date: "4/20/2017"
+output: html_document
+---
+
+# Introduction
+
+# Data
+
+# Exploratory Data Analysis 
+
+```{r}
+library(spBayes)
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+library(gridExtra)
+library(lubridate)
+```
+
+
+## Global Earthquakes, Magnitude > 4.5
+
+```{r}
+cali_df = read.csv("datasets/cali_df.csv")
+chile_df = read.csv("datasets/chile_df.csv")
+all = read.csv("datasets/kaggle_data.csv")
+
+map.world = map_data(map = "world")
+chile_map = map.world %>%
+  filter(region == "Chile") %>%
+  filter(long > -90)
+cali_map = map_data("state", "california")
+mexico_map = map_data(map = "world", region = "mexico")
+states_map = map_data(map = "state")
+
+# big earthquakes
+big = all %>%
+  dplyr::filter(Magnitude > 7)
+# small earthquakes
+small = all %>%
+  dplyr::filter(Magnitude <= 7)
+
+# all earthquakes
+all_map = ggplot() + 
+  geom_polygon(data = map.world, aes(x = long, y = lat, group = group),
+               fill = "white", color = "black") + 
+    geom_point(data = small, aes(x = Longitude, y = Latitude, color = ">4.5"), 
+               size = 0.2) +
+  geom_point(data = big, aes(x = Longitude, y = Latitude, color = ">7.0"), 
+             size = 0.75) +
+  coord_fixed(1.3) +
+  scale_colour_manual("Magnitude", values = c("darkblue", "red")) +
+  ggtitle("Earthquakes 1965-2017, Magnitudes > 4.5") +
+  xlab("") +
+  ylab("")
+
+pdf("plots/all_map.pdf", width = 10)
+all_map
+dev.off()
+```
+
+# Magnitudes > 4.5
+
+```{r}
+# subset chile
+chile_small = small %>%
+  filter(Longitude < -60, Longitude > -80, 
+         Latitude < -15, Latitude > -60)
+chile_big = big %>%
+  filter(Longitude < -60, Longitude > -80, 
+         Latitude < -15, Latitude > -60)
+map_one = map.world %>%
+   filter(long < -60, long > -80, 
+         lat < -15, lat > -60)
+
+# zoom in on California and baja
+cali_small = small %>%
+  filter(Longitude > -125, Longitude < -100, 
+         Latitude > 15, Latitude < 42.5)
+cali_big = big %>%
+  filter(Longitude > -125, Longitude < -100, 
+         Latitude > 15, Latitude < 42.5)
+mexico_map = map.world %>%
+  filter(long > -125, long < -100, 
+         lat > 15,lat< 42.5)
+states_map = states_map %>%
+  filter(long > -125, long < -100, 
+         lat > 15,lat< 42.5)
+
+
+# zoom in on chile
+chile_ggplot = ggplot() + 
+  geom_polygon(data = chile_map, aes(x = long, y = lat, group = group), 
+               fill = "white", color = "black") + 
+    geom_point(data = chile_small, aes(x = Longitude, y = Latitude, 
+                                       color = ">4.5"),
+               size = 0.75) +
+  geom_point(data = chile_big, aes(x = Longitude, y = Latitude,
+                                   color = ">7.0"), 
+            size= 2) +  
+  scale_colour_manual("Magnitude", values = c("darkblue", "red")) +
+  coord_fixed(1.3) +
+  ggtitle("Chile") +
+  xlab("") +
+  ylab("")
+
+# california earthquakes
+cali_ggplot = ggplot() + 
+  geom_polygon(data = cali_map, aes(x = long, y = lat, group = group), 
+               fill = "white", color = "black") + 
+  geom_path(data = mexico_map, aes(x = long, y = lat, group = group), 
+               color = "black") +
+  geom_point(data = cali_small, aes(x = Longitude, y = Latitude, 
+                                    color = ">4.5"), size = .75) +
+  geom_point(data = cali_big, aes(x = Longitude, y = Latitude,
+                                  color = ">7.0"), size = 2) + 
+  scale_colour_manual("Magnitude", values = c("darkblue", "red")) +
+  coord_fixed(1.3) +
+  ggtitle("California/Mexico") +
+  xlab("") +
+  ylab("")
+
+
+# plot chile and califronia together in pdf
+pdf("plots/chile_cali_map1.pdf", width = 10)
+grid.arrange(chile_ggplot, cali_ggplot, nrow = 1,
+             top = "Earthquakes 1965-2016, Magnitudes > 4.5")
+dev.off()
+
+# show in .rmd and .html
+grid.arrange(chile_ggplot, cali_ggplot, nrow = 1,
+             top = "Earthquakes 1965-2016, Magnitudes > 4.5")
+```
+
+
+## Magnitudes > 2.5
+
+```{r}
+## plot > 2.5
+chile_df$time = ymd_hms(chile_df$time)
+cali_df$time = ymd_hms(cali_df$time)
+
+chile = filter(chile_df, year(time) %in% c(2016,2017))
+cali = filter(cali_df, year(time) %in% c(2016,2017))
+
+chile_small_2016 = chile %>%
+  filter(mag < 4.5)
+chile_med_2016 = chile %>%
+  filter(mag >= 4.5)
+chile_big_2016 = chile %>%
+  filter(mag >= 7)
+
+cali_small_2016 = cali %>%
+  filter(mag < 4.5)
+cali_med_2016 = cali %>%
+  filter(mag >= 4.5)
+cali_big_2016 = cali %>%
+  filter(mag >= 7)
+
+chile_2016_ggplot = ggplot() + 
+  geom_polygon(data = chile_map, aes(x = long, y = lat, group = group), 
+               fill = "white", color = "black") + 
+  geom_point(data = chile_small_2016, aes(x = longitude, y = latitude,
+                                          color = ">2.5"), 
+             size = 0.75) +
+  geom_point(data = chile_med_2016, aes(x = longitude, y = latitude,
+                                        color = ">4.5"), 
+             size = 1) +
+  geom_point(data = chile_big_2016, aes(x = longitude, y = latitude, 
+                                        color = ">7.0"), 
+               size = 3) + 
+  coord_fixed(1.3) +
+  scale_colour_manual(name="Magnitude", 
+                      values = c("green", "darkblue", "red")) +
+  ggtitle("Chile") +
+  xlab("") +
+  ylab("")
+
+
+cali_2016_ggplot = ggplot() + 
+  geom_polygon(data = cali_map, aes(x = long, y = lat, group = group), 
+               fill = "white", color = "black") + 
+  geom_path(data = mexico_map, aes(x = long, y = lat, group = group), 
+               color = "black") + 
+  geom_point(data = cali_small_2016, aes(x = longitude, y = latitude, 
+                                         color = ">2.5"), size = 0.75) +
+  geom_point(data = cali_med_2016, aes(x = longitude, y = latitude, 
+                                       color = ">4.5"), size = 1) +
+  #geom_point(data = cali_big_2016, aes(x = longitude, y = latitude, 
+  #                                     color = ">7"), size = 3) + 
+  scale_colour_manual(name="Magnitude", values = c("green", "darkblue")) +
+  ggtitle("California/Mexico") +
+  coord_fixed(1.3) +
+  xlab("") +
+  ylab("")
+
+
+# create pdf
+pdf("plots/chile_cali_map2.pdf", width = 10)
+grid.arrange(chile_2016_ggplot, cali_2016_ggplot, nrow = 1, 
+             top = "Earthquakes Jan 2016 - Apr 2017, Magnitudes > 2.5")
+dev.off()
+
+# show in .html
+grid.arrange(chile_2016_ggplot, cali_2016_ggplot, nrow = 1, 
+             top = "Earthquakes Jan 2016 - Apr 2017, Magnitudes > 2.5")
+```
+
+
+```{r}
+# subset indonesia
+indonesia_map = map.world %>%
+  filter(region == "Indonesia") 
+
+indonesia = all %>%
+ filter(Latitude < 10, Latitude > -15, 
+         Longitude < 145, Longitude > 90)
+indonesia_big = indonesia %>%
+  filter(Magnitude > 7.0)
+indonesia_small = indonesia %>%
+  filter(Magnitude <= 7.0)
+
+ggplot() +
+  geom_polygon(data = indonesia_map, aes(x = long, y = lat, group = group),
+               fill = "white", color = "black") +
+  geom_point(data = indonesia_small, aes(x = Longitude, y = Latitude), size = 0.2, color = "darkblue") +
+  geom_point(data = indonesia_big, aes(x = Longitude, y = Latitude), size = .75, color = "red") +
+  coord_fixed(1.3)
+
+```
+
+# Histograms of Magnitudes
+```{r}
+cali_hist = ggplot() +
+  geom_histogram(data = cali_df, aes(x = mag), bins = 30) +
+  ggtitle("California/Mexico")
+
+chile_hist = ggplot() +
+  geom_histogram(data = chile_df, aes(x = mag), bins = 30) +
+  ggtitle("Chile")
+
+pdf("plots/histograms.pdf", width = 10)
+grid.arrange(chile_hist, cali_hist,
+             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+dev.off()
+
+grid.arrange(chile_hist, cali_hist,
+             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+```
+
+# Depth and Magnitude Type
+
+```{r}
+cali_depth = ggplot() +
+  geom_point(data = cali_df, aes(x = depth, y  = mag)) +
+  ggtitle("Depth vs. Magnitude in Cali/Mexico")
+
+chile_depth = ggplot() +
+  geom_boxplot(data = chile_df, aes(x = magType, y = mag)) +
+  ggtitle("Mag Type vs. Magnitude in Cali/Mexico")
+
+pdf("plots/depth_magtype.pdf", width = 10)
+grid.arrange(chile_depth, cali_depth,
+             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+dev.off()
+
+grid.arrange(chile_depth, cali_depth,
+             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+```
+
+# Plotting Fault lines
+
+
+# Linear Regression Model without Spatial component
+```{r}
+fit_cali = lm(mag ~ depth, data = chile_df)
+summary(fit_cali)
+```
+
+
+
+
+
