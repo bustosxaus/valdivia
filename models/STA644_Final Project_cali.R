@@ -21,8 +21,8 @@ library(spBayes)
 library(maptools)
 
 # Reading in the earthquakes data for the California
-cali = fread("cali_df.csv")
-chile = fread("chile_df.csv")
+cali = fread("cali_df.csv")[mag > 4.5, ]
+# chile = fread("chile_df.csv")
 
 # names(cali)[2:3] = c("lat", "long")
 
@@ -84,13 +84,13 @@ mexico_map = world_map %>%
 both_map = bind_rows(cali_map, mexico_map)
 
 # Plotting magnitude
-# ggplot() +
-#   geom_map(data = both_map, map = both_map, aes(map_id = region),
-#            color = "black", fill = "white") +
-#   geom_point(data = cali, aes(x = longitude, y = latitude, color = mag), alpha = .5) +
-#   scale_color_continuous(low = "grey", high = "red") +
-#   scale_size(range = c(2, 6)) +
-#   coord_fixed(1.3)
+ggplot() +
+  geom_map(data = both_map, map = both_map, aes(map_id = region),
+           color = "black", fill = "white") +
+  geom_point(data = cali, aes(x = longitude, y = latitude, color = mag), alpha = .5) +
+  scale_color_continuous(low = "grey", high = "red") +
+  scale_size(range = c(2, 6)) +
+  coord_fixed(1.3)
 
 
 # Getting the coordinates of our data
@@ -107,10 +107,11 @@ moransI = morans_I(y = cali$mag, w = w)
 ############### VARIOGRAM ################
 
 # Sample of the data for testing
-cali_samp = cali[sample(1:nrow(cali), 100), ]
+# cali_samp = cali[sample(1:nrow(cali), 100), ]
+cali_samp = cali
 
 # Getting the coordinates of our data
-coords = cali_samp[, .(latitude, longitude)] %>% 
+coords = cali_samp[, .(longitude, latitude)] %>% 
   as.matrix()
 
 # Calculating the distances between points
@@ -191,19 +192,18 @@ r = raster(nrows = 75, ncol = 75,
            xmn = min(cali_samp$longitude) * 1.05, xmx = max(cali_samp$longitude) * 0.95,
            ymn = min(cali_samp$latitude) * 0.95, ymx = max(cali_samp$latitude) * 1.05)
 
-pred_coords = expand.grid(x = seq(min(cali_samp$longitude) * 1.05, 
-                                  max(cali_samp$longitude) * 0.95, length.out = 75),
-                          y = seq(min(cali_samp$latitude) * 0.95, 
-                                  max(cali_samp$latitude) * 1.05, length.out = 75))
+# pred_coords = expand.grid(x = seq(min(cali_samp$longitude) * 1.05,
+#                                   max(cali_samp$longitude) * 0.95, length.out = 75),
+#                           y = seq(min(cali_samp$latitude) * 0.95,
+#                                   max(cali_samp$latitude) * 1.05, length.out = 75))
 # Rasterizing the cali portion of the world map
-# cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
+cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
 # r_raster = rasterize(r)
 
 # Stripping empty portions?
-# cells = which(is.na(cali_raster[]) == FALSE)
-# cells = which(is.na(cali_raster[]) == FALSE)
+cells = which(is.na(cali_raster[]) == FALSE)
 # Getting the cooridinates from the raster
-# pred_coords = xyFromCell(r)
+pred_coords = xyFromCell(r, cells)
 
 
 # Predicting on the raster
@@ -220,7 +220,8 @@ pred_summary = post_summary(t(pred$p.y.predictive.samples))
 
 # The raster
 splm_pred = r
-splm_pred[1:nrow(pred_coords)] = pred_summary$post_mean
+splm_pred[cells] = pred_summary$post_mean
+# splm_pred[1:nrow(pred_coords)] = pred_summary$post_mean
 
 plot(splm_pred)
 points(coords, pch=16, cex=0.5)
