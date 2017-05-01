@@ -42,7 +42,9 @@ post_summary = function(m, ci_width=0.95)
   )
   
   if (!is.null(colnames(m)))
-    d = d %>% mutate(param = colnames(m)) %>% select(param,post_mean:post_upper)
+    d = d %>% 
+      mutate(param = colnames(m)) %>% 
+      dplyr::select(param, post_mean:post_upper)
   
   d
 }
@@ -185,11 +187,13 @@ samples$p.beta.recover.samples %>%
 data(wrld_simpl)
 # Creating a raster for the region we care about
 r = raster(nrows = 75, ncol = 75,
-           xmn = min(cali$longitude) * 1.05, xmx = max(cali$longitude) * 0.95,
-           ymn = min(cali$latitude) * 0.95, ymx = max(cali$latitude) * 1.05)
+           xmn = min(cali_samp$longitude) * 1.05, xmx = max(cali_samp$longitude) * 0.95,
+           ymn = min(cali_samp$latitude) * 0.95, ymx = max(cali_samp$latitude) * 1.05)
 # Rasterizing the cali portion of the world map
 cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
+
 # Stripping empty portions?
+# cells = which(is.na(cali_raster[]) == FALSE)
 cells = which(is.na(cali_raster[]) == FALSE)
 # Getting the cooridinates from the raster
 pred_coords = xyFromCell(r, cells)
