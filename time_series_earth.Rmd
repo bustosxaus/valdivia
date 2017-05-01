@@ -94,5 +94,3 @@ model3 %>% residuals() %>% ggtsdisplay(points = F,
                                      main = paste('AIC:', round(model3$aic)))
 ```
 
-
-

@@ -16,12 +16,21 @@ chile0417_zoo = read.zoo(chile0417)
 
 ggtsdisplay(chile0417_zoo, main='Chile 2004-2017')
 
+pdf("plots/tsdisplay1.pdf", width = 10)
+ggtsdisplay(chile0417_zoo, main='Chile 2004-2017')
+dev.off()
+
 auto.arima(chile0417_zoo)
 
 model1 = Arima(chile0417_zoo, order = c(5, 1, 0))
 
 model1 %>% residuals() %>% tsdisplay(points = F, 
                                      main = paste('AIC:', round(model1$aic)))
+
+pdf("plots/model1.pdf", width = 10)
+model1 %>% residuals() %>% tsdisplay(points = F, 
+                                     main = paste('AIC:', round(model1$aic)))
+dev.off()
 
 #chile 5 years
 earth = read.csv('datasets/chile_df.csv')
@@ -35,6 +44,10 @@ chile5 = earth %>%
 chile5_zoo = read.zoo(chile5)
 
 ggtsdisplay(chile5_zoo, main='Chile last 5 years')
+
+pdf("plots/tsdisplay2.pdf", width = 10)
+ggtsdisplay(chile5_zoo, main='Chile last 5 years')
+dev.off()
 
 auto.arima(chile5_zoo)
 
@@ -57,12 +70,21 @@ chile2year_zoo = read.zoo(chile_2year)
 
 ggtsdisplay(chile2year_zoo, main='Chile 2009 and 2010')
 
+pdf("plots/tsdisplay3.pdf", width = 10)
+ggtsdisplay(chile2year_zoo, main='Chile 2009 and 2010')
+dev.off()
+
 auto.arima(chile2year_zoo)
 
 model3 = Arima(chile2year_zoo, order = c(1, 1, 1))
 
 model3 %>% residuals() %>% ggtsdisplay(points = F, 
                                      main = paste('AIC:', round(model3$aic)))
+
+pdf("plots/model3.pdf", width = 10)
+model3 %>% residuals() %>% ggtsdisplay(points = F, 
+                                       main = paste('AIC:', round(model3$aic)))
+dev.off()
 
 #california 2004-2017
 earth = read.csv('datasets/cali_df.csv')
