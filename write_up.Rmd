@@ -1,32 +1,43 @@
 ---
-title: "final_project"
+title: "Patterns in Earthquake Magnitudes"
 author: "Sarah Normoyle, Drew Jordan, Gonzalo Bustos"
-date: "4/20/2017"
+date: "4/28/2017"
 output: html_document
 ---
 
-# Introduction
+# Introduction and Data
 
-# Data
+If we could predict the time, location, and size of earthquakes, it would be very helpful in order to save lives. However, all of these are very difficult to predict. For our project, we will attempt to apply spatial and temporal models learned in class to look for patterns and further understand these models. 
+
+The original data set comes from kaggle.com, and it contains all earthquakes with a magnitude greater than 4.5. After finding the reference for this dataset, at earthquake.usgs.gov, we were able to pull different queries of years, magnitudes, and areas, so we could further explore the data on earthquakes. Because the data is individual points, we are using models that are based on point-reference data. 
+
+Different datasets were used for various approaches. the world data set is the one from kaggle that covers 1965-2016 with magnitudes greater than 4.5. The bay area data set covers about 10 years of data from April 28, 2007 until May 1, 2017 set to a rectangle of the San Francisco bay area, which is Latitude: [36.94, 37.79] and Longitude: [-122.57, -121.75]. The magnitudes are restricted to grater than 2.5. The California/Mexico dataset includes California going down to the Northern part of Mexico and covers data from April 21, 2012 to April 28, 2017. The Chile dataset includes the area around Chile and also covers data from April 21, 2012 to April 28, 2017. 
+
+The measurement of magnitudes of earthquakes is also complicated as a unit of measurement. The scale is based on a logarithmic scale, and there are multiple ways to measure it based on seismic activity. For the sake of this project, various measurements of magnitude were treated equally. 
 
 # Exploratory Data Analysis 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(spBayes)
 library(ggplot2)
 library(ggmap)
 library(dplyr)
 library(gridExtra)
 library(lubridate)
+library(tidyverse)
+library(forecast)
+library(zoo)
+library(lubridate)
 ```
 
+## Magnitude > 4.5 
+### Global Earthquakes
 
-## Global Earthquakes, Magnitude > 4.5
-
-```{r}
+```{r, message=FALSE, warning=FALSE}
 cali_df = read.csv("datasets/cali_df.csv")
 chile_df = read.csv("datasets/chile_df.csv")
 all = read.csv("datasets/kaggle_data.csv")
+bayarea = read.csv("datasets/bayarea.csv")
 
 map.world = map_data(map = "world")
 chile_map = map.world %>%
@@ -62,9 +73,14 @@ all_map
 dev.off()
 ```
 
-# Magnitudes > 4.5
+This map shows the entire data set of earthquakes with magnitudes greater than 4.5 from 1965 to 2016. The earthquakes with magnitudes greater than 7 are colored in red to show certain areas of the world that tend to have higher magnitudes of earthquakes. From this plot, we can see certain areas of the world tend to have higher earthquake magnitudes than other parts of the world. 
 
-```{r}
+
+### California-Mexico and Chile
+
+Next, we plot the same map as above but zoom in on two regions, specifically Chile and a comparable size in California and part of Mexico. 
+
+```{r, message=FALSE, warning=FALSE}
 # subset chile
 chile_small = small %>%
   filter(Longitude < -60, Longitude > -80, 
@@ -135,10 +151,42 @@ grid.arrange(chile_ggplot, cali_ggplot, nrow = 1,
              top = "Earthquakes 1965-2016, Magnitudes > 4.5")
 ```
 
+From this plot, it looks like Chile has more bigger earthquakes than California does. 
+
+### Indonesia
+
+Looking at Indonesisa because the interesting shape in the faults.
+
+```{r, message=FALSE, warning=FALSE}
+# subset indonesia
+indonesia_map = map.world %>%
+  filter(region == "Indonesia") 
+
+indonesia = all %>%
+ filter(Latitude < 10, Latitude > -15, 
+         Longitude < 145, Longitude > 90)
+indonesia_big = indonesia %>%
+  filter(Magnitude > 7.0)
+indonesia_small = indonesia %>%
+  filter(Magnitude <= 7.0)
+
+ggplot() +
+  geom_polygon(data = indonesia_map, aes(x = long, y = lat, group = group),
+               fill = "white", color = "black") +
+  geom_point(data = indonesia_small, aes(x = Longitude, y = Latitude), size = 0.2, color = "darkblue") +
+  geom_point(data = indonesia_big, aes(x = Longitude, y = Latitude), size = .75, color = "red") +
+  coord_fixed(1.3) + 
+  ggtitle("Earthquakes 1965-2016, Magnitudes > 4.5")
+
+```
 
 ## Magnitudes > 2.5
 
-```{r}
+### California-Mexico and Chile
+
+After looking at only the magnitudes above 4.5, it seems important to also look at smaller earthquakes. Now, we will viualize earthquakes that are also above a magnitude of 2.5. Once you start looking at data below 2.5, there starts to be exponentially more data to work with.
+
+```{r, message=FALSE, warning=FALSE}
 ## plot > 2.5
 chile_df$time = ymd_hms(chile_df$time)
 cali_df$time = ymd_hms(cali_df$time)
@@ -197,7 +245,6 @@ cali_2016_ggplot = ggplot() +
   xlab("") +
   ylab("")
 
-
 # create pdf
 pdf("plots/chile_cali_map2.pdf", width = 10)
 grid.arrange(chile_2016_ggplot, cali_2016_ggplot, nrow = 1, 
@@ -207,33 +254,13 @@ dev.off()
 # show in .html
 grid.arrange(chile_2016_ggplot, cali_2016_ggplot, nrow = 1, 
              top = "Earthquakes Jan 2016 - Apr 2017, Magnitudes > 2.5")
-```
-
-
-```{r}
-# subset indonesia
-indonesia_map = map.world %>%
-  filter(region == "Indonesia") 
-
-indonesia = all %>%
- filter(Latitude < 10, Latitude > -15, 
-         Longitude < 145, Longitude > 90)
-indonesia_big = indonesia %>%
-  filter(Magnitude > 7.0)
-indonesia_small = indonesia %>%
-  filter(Magnitude <= 7.0)
-
-ggplot() +
-  geom_polygon(data = indonesia_map, aes(x = long, y = lat, group = group),
-               fill = "white", color = "black") +
-  geom_point(data = indonesia_small, aes(x = Longitude, y = Latitude), size = 0.2, color = "darkblue") +
-  geom_point(data = indonesia_big, aes(x = Longitude, y = Latitude), size = .75, color = "red") +
-  coord_fixed(1.3)
 
 ```
+
 
 # Histograms of Magnitudes
-```{r}
+
+```{r, message=FALSE, warning=FALSE}
 cali_hist = ggplot() +
   geom_histogram(data = cali_df, aes(x = mag), bins = 30) +
   ggtitle("California/Mexico")
@@ -251,36 +278,148 @@ grid.arrange(chile_hist, cali_hist,
              top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
 ```
 
+These histograms also confirm that the average magnitude in California/Mexico is lower than the average magnitude of earthquakes along Chile. 
+
 # Depth and Magnitude Type
-
-```{r}
+```{r, message=FALSE, warning=FALSE}
 cali_depth = ggplot() +
-  geom_point(data = cali_df, aes(x = depth, y  = mag)) +
-  ggtitle("Depth vs. Magnitude in Cali/Mexico")
+  geom_point(data = bayarea, aes(x = depth, y  = mag)) +
+  ggtitle("Depth vs. Magnitude in Bay Area")
 
-chile_depth = ggplot() +
-  geom_boxplot(data = chile_df, aes(x = magType, y = mag)) +
-  ggtitle("Mag Type vs. Magnitude in Cali/Mexico")
+cali_magtype = ggplot() +
+  geom_boxplot(data = bayarea, aes(x = magType, y = mag)) +
+  ggtitle("Mag Type vs. Magnitude in Bay Area")
 
 pdf("plots/depth_magtype.pdf", width = 10)
-grid.arrange(chile_depth, cali_depth,
-             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+grid.arrange(cali_depth, cali_magtype,
+             top = "10 years of Earthquakes, Magnitudes > 2.5")
 dev.off()
 
-grid.arrange(chile_depth, cali_depth,
-             top = "Earthquakes Jan 2012 - Apr 2017, Magnitudes > 2.5")
+grid.arrange(cali_depth, cali_magtype,
+             top = "10 years of Earthquakes, Magnitudes > 2.5")
 ```
 
-# Plotting Fault lines
+Depth of the earthquake and magnitude don't seem to have a very obvious relationship, even when focusing on a particular area or looking generally at larger areas. We included depth because depth was the only usable covariate in the dataset. We will also compare depth in the a simple model to then using depth included in a spatial model. 
 
+# Modeling
 
-# Linear Regression Model without Spatial component
+## Linear Regression
+
+Using simple linear regression on the San Francisco Bay Area data set, we get the following result as a fit. 
+
 ```{r}
-fit_cali = lm(mag ~ depth, data = chile_df)
+fit_cali = lm(mag ~ depth, data = bayarea)
 summary(fit_cali)
 ```
 
+Although the p-value is small because of the large number of points, the relationship is weak and not very linear. However, we continue to use depth in the spatial model to see if adding space adds more information to the model. 
+
+## Spatial Models
+
+Next we fit a Gaussian process to the magnitudes of earthquakes and looked for a spatial relationship in certain areas. The difficulty here is having too much data to build a spatial model with enough time to run. In addition, there are so many earthquakes below 2.5 that make it computationally infeasible, and cutting the magnitude at certain values seems arbitrary. However, we will cut the magnitudes off at certain values in order to precede. The code for the spatial models can be found in another .R script files in the repository. 
+
+### California/Mexico 5 years, Mag > 4.5
+
+<img src="plots/Greater_than_45.jpeg" />
+
+### Bay Area 10 years, Mag > 2.5
+
+<img src="plots/BayAreaMap.jpeg" /> 
+
+<img src="plots/TracePlotsBayArea1.jpeg" /> 
+ 
+<img src="plots/TracePlotsBayArea2.jpeg" />
 
 
+# Time Modeling
+
+Modeling this dataset with regards to time was also very difficult. There are lots of earthquakes, and the time relationship does not seem very obvious. Just looking at the time component of the data does not seem to achieve any valuable insights. Starting with the series for earthquakes in Chile from 2004 to 2017, the following plots are obtained:
+
+```{r, message=FALSE, warning=FALSE}
+
+
+#chile 2004-2017
+earth = read.csv('datasets/chile_2004_today.csv')
+
+chile0417 = earth %>%
+                select(time, mag) %>%
+                mutate(time=date(time)) %>%
+                arrange(time, -mag) %>%
+                filter (!duplicated (time))
+
+chile0417_zoo = read.zoo(chile0417)
+
+ggtsdisplay(chile0417_zoo, main='Chile 2004-2017')
+```
+
+Running an Arima model with the `forecast` project:
+
+```{r}
+auto.arima(chile0417_zoo)
+
+model1 = Arima(chile0417_zoo, order = c(5, 1, 0))
+
+model1 %>% residuals() %>% ggtsdisplay(points = F, 
+                                     main = paste('AIC:', round(model1$aic)))
+```
+
+Comparing with the series for the last 5 years in Chile:
+
+```{r}
+#chile 5 years
+earth = read.csv('datasets/chile_df.csv')
+
+chile5 = earth %>%
+    select(time, mag) %>%
+    mutate(time=date(time)) %>%
+    arrange(time, -mag) %>%
+    filter (!duplicated (time))
+
+chile5_zoo = read.zoo(chile5)
+
+ggtsdisplay(chile5_zoo, main='Chile last 5 years')
+```
+
+Running the `auto.arima` function does not provide any insights on the time components:
+
+```{r}
+auto.arima(chile5_zoo)
+```
+
+So, depending on the time frame selected, different Arima models are obtained, and it seems hard to pick up a signal from the magnitudes across time. There was a fairly big earthquake in Chile in March 2010, looking at the earthquake time series for 2009 and 2010, the following plots are obtained:
+
+```{r}
+#filtering two years
+earth = read.csv('datasets/chile_2004_today.csv')
+
+chile_2year = earth %>% 
+    select(time, mag) %>%
+    mutate(time=date(time)) %>%
+    arrange(time, -mag) %>%
+    filter(!duplicated (time)) %>%
+    filter(year(time) %in% c(2009, 2010))
+
+chile2year_zoo = read.zoo(chile_2year)
+
+ggtsdisplay(chile2year_zoo, main='Chile 2009 and 2010')
+```
+
+An Arima model on this last time series provides a third set of time components, so without the spatial component, time analysis does not seem appropriate:
+
+```{r}
+auto.arima(chile2year_zoo)
+
+model3 = Arima(chile2year_zoo, order = c(1, 1, 1))
+
+model3 %>% residuals() %>% ggtsdisplay(points = F, 
+                                     main = paste('AIC:', round(model3$aic)))
+```
+
+
+
+
+# Future Considerations
+
+There is much more left to be explored with this dataset. For the sake of this project, we focused on looking for patterns in magnitudes, rather than counts or occurences. An interesting analysis could definitely be done looking at occurences of earthquakes across time and space. In addition, we did build a large spatial model due to time constraints on our project. We could also look into applying further models that we did not necessarily cover in this class. We also learned that applying that spatio-temporal statistics to real data sets is complicated, frustrating, and time consuming. 
 
 
