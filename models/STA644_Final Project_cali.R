@@ -11,7 +11,6 @@ library(gridExtra)
 library(purrr)
 library(forecast)
 library(fields)
-# library(readr)
 library(sf)
 library(forcats)
 library(dplyr)
@@ -21,11 +20,7 @@ library(spBayes)
 library(maptools)
 
 # Reading in the earthquakes data for the California
-# cali = fread("cali_df.csv")[mag > 4.5, ]
 cali = fread("bayarea.csv")
-# chile = fread("chile_df.csv")
-
-# names(cali)[2:3] = c("lat", "long")
 
 # Colin's functions
 get_coda_parameter = function(coda, pattern)
@@ -108,7 +103,6 @@ moransI = morans_I(y = cali$mag, w = w)
 ############### VARIOGRAM ################
 
 # Sample of the data for testing
-# cali_samp = cali[sample(1:nrow(cali), 100), ]
 cali_samp = cali
 
 # Getting the coordinates of our data
@@ -123,14 +117,6 @@ d = dist(coords) %>%
 variog(coords = coords, data = cali_samp$mag, messages = FALSE,
         uvec = seq(0, max(d)/2, length.out = 25)) %>%
    plot()
-
-
-
-# # Checking for anisotrophy
-# v4 = variog4(coords = coords, data = cali_samp$mag, messages = FALSE,
-#              uvec = seq(0, max(d)/2, length.out = 50))
-# plot(v4)
-
 
 # Number of observations in the data
 n = cali_samp[, .N]
@@ -170,7 +156,6 @@ m = spLM(form, data = cali_samp, coords = coords,
          n.report = n_samp / 2)
 
 # Recovering samples
-# samples = spRecover(m, start = n_samp/2 + 1, thin = (n_samp/2)/1000)
 samples = spRecover(m, start = n_samp/2 + 1)
 
 # Posterior analysis
@@ -195,10 +180,6 @@ r = raster(nrows = 200, ncol = 200,
            xmn = min(cali_samp$longitude) * 1.05, xmx = max(cali_samp$longitude) * 0.95,
            ymn = min(cali_samp$latitude) * 0.95, ymx = max(cali_samp$latitude) * 1.05)
 
-# pred_coords = expand.grid(x = seq(min(cali_samp$longitude) * 1.05,
-#                                   max(cali_samp$longitude) * 0.95, length.out = 75),
-#                           y = seq(min(cali_samp$latitude) * 0.95,
-#                                   max(cali_samp$latitude) * 1.05, length.out = 75))
 # Rasterizing the cali portion of the world map
 cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME %in% c("United States", "Mexico"), ], r)
 # r_raster = rasterize(r)
@@ -210,15 +191,9 @@ pred_coords = xyFromCell(r, cells)
 
 
 # Predicting on the raster
-# pred = spPredict(samples, pred_coords, pred.covars = matrix(1, nrow = nrow(pred_coords)),
-#                  start = n_samp/2 + 1, thin = (n_samp/2) / 1000)
-
 pred = spPredict(samples, pred_coords,
                  pred.covars = matrix(1, nrow = nrow(pred_coords), ncol = ncol(beta_cov)),
                  start = n_samp - 100)
-# pred = spPredict(samples, coords,
-#                  pred.covars = model.matrix(mag ~ 1 + depth, data = cali_samp),
-#                  start = n_samp/2 + 1)
 # Posterior summary of the predictions
 pred_summary = post_summary(t(pred$p.y.predictive.samples))
 
