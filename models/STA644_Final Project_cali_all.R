@@ -21,8 +21,8 @@ library(spBayes)
 library(maptools)
 
 # Reading in the earthquakes data for the California
-# cali = fread("cali_df.csv")[mag > 4.5, ]
-cali = fread("bayarea.csv")
+cali = fread("cali_df.csv")[mag > 4.5, ]
+# cali = fread("bayarea.csv")
 # chile = fread("chile_df.csv")
 
 # names(cali)[2:3] = c("lat", "long")
@@ -121,10 +121,8 @@ d = dist(coords) %>%
 
 # Calculating and plotting the variogram
 variog(coords = coords, data = cali_samp$mag, messages = FALSE,
-        uvec = seq(0, max(d)/2, length.out = 25)) %>%
-   plot()
-
-
+       uvec = seq(0, max(d)/2, length.out = 25)) %>%
+  plot()
 
 # # Checking for anisotrophy
 # v4 = variog4(coords = coords, data = cali_samp$mag, messages = FALSE,
@@ -158,7 +156,7 @@ tuning = list("phi" = 0.03, "sigma.sq" = 0.03, "tau.sq" = 0.03)
 # Priors for our Bayesian Sampler
 priors = list(
   beta.Norm = list(rep(0, p), beta_cov),
-  phi.Unif = c(max_range, 6),
+  phi.Unif = c(3/max_range, 6),
   sigma.sq.IG = c(2, 2),
   tau.sq.IG = c(2, 2)
 )
@@ -174,14 +172,14 @@ m = spLM(form, data = cali_samp, coords = coords,
 samples = spRecover(m, start = n_samp/2 + 1)
 
 # Posterior analysis
-samples$p.theta.samples %>%
-  mcmc() %>%
-  plot()
-
-# Posterior distribution of beta
-samples$p.beta.recover.samples %>%
-  mcmc() %>%
-  plot()
+# samples$p.theta.samples %>% 
+#   mcmc() %>%
+#   plot()
+# 
+# # Posterior distribution of beta
+# samples$p.beta.recover.samples %>%
+#   mcmc() %>%
+#   plot()
 
 # Posterior summaries
 samples$p.beta.recover.samples %>%
@@ -215,7 +213,7 @@ pred_coords = xyFromCell(r, cells)
 
 pred = spPredict(samples, pred_coords,
                  pred.covars = matrix(1, nrow = nrow(pred_coords), ncol = ncol(beta_cov)),
-                 start = n_samp - 100)
+                 start = n_samp - 1000)
 # pred = spPredict(samples, coords,
 #                  pred.covars = model.matrix(mag ~ 1 + depth, data = cali_samp),
 #                  start = n_samp/2 + 1)
@@ -227,19 +225,23 @@ splm_pred = r
 splm_pred[cells] = pred_summary$post_mean
 # splm_pred[1:nrow(pred_coords)] = pred_summary$post_mean
 
-plot(splm_pred, xlim = c(-122.5, -121.25), ylim = c(36.8, 38))
+plot(splm_pred, xlim = c(min(cali_samp$longitude) * 1.05, max(cali_samp$longitude) * 0.95),
+     ylim = c(min(cali_samp$latitude )*0.95, max(cali_samp$latitude )*1.05))
 points(coords, pch=16, cex=0.5)
-
-# Getting the fitted values for our data points
-pred_data = spPredict(samples, coords,
-                      pred.covars = matrix(c(rep(1, nrow(coords)), 
-                                             cali_samp$depth), 
-                                           nrow = nrow(coords)),
-                      start = n_samp - 1000)
 
 
 # Getting the residuals from our model
-resid = rowMeans(pred_data$p.y.predictive.samples) - cali_samp$mag
-# RMSE
-RMSE = sqrt(mean(resid^2))
-RMSE
+resid = pred$p.y.predictive.samples
+
+
+
+#######################  FITTING A THIN PLATE SPLINE ######################
+
+r = raster(nrows=200, ncol=400,
+           xmn = min(cali$longitude)*1.05, xmx = max(cali$longitude)*0.95,
+           ymn = min(cali$latitude )*0.95, ymx = max(cali$latitude )*1.05)
+
+cali_raster = rasterize(wrld_simpl[wrld_simpl$NAME == "United States",], r)
+
+cells = which(!is.na(cali_raster[]))
+pred_coords = xyFromCell(r, cells)
