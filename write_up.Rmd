@@ -321,20 +321,20 @@ clusterplot2 = ggplot(fault_line, aes(Longitude, Latitude, color = factor(cluste
 clusterplot2
 ```
 
-This clustering is interesting because based solely on this part of the map, we can see how adding depth and magnitude clustered together a few lines off the coast of Chile. Perhaps magnitude and depth might have spatial compenents. Here, it looks like the spatial relationship involving magnitude and depth are based more on a spatial relationship following lines, not spatial relationships in all directions. This would be interesting to note for further investigation.
+This clustering result is interesting because based solely on this part of the map, we can see how adding depth and magnitude clustered together a few vertical lines off the coast of Chile where the fault line is. Because of this, perhaps magnitude and depth might have spatial compenents beyond just occurence of earthquakes. Here, it looks like the spatial relationship involving magnitude and depth are based more on a linear spatial relationship, not a spatial relationship in all directions. This would be interesting to note for further investigation.
 
 # Modeling
 
 ## Linear Regression
 
-Starting with simple linear regression on the San Francisco Bay Area data set, we get the following result as a fit. 
+Starting with simple linear regression on the San Francisco Bay Area data set, we get the following result as a fit only using depth as a covariate. 
 
 ```{r}
 fit_cali = lm(mag ~ depth, data = bayarea)
 summary(fit_cali)
 ```
 
-Although the p-value is small because of the large number of points, the relationship is weak and not very linear. However, we continue to use depth in the spatial model to see if adding space adds more information to the model. 
+Although the p-value for depth is small because of the large number of points, the relationship is weak and not very linear. However, we continue to use depth in the spatial model to see if adding space adds more information to the model. 
 
 ## Spatial Models
 
@@ -353,7 +353,7 @@ Next we fit a Gaussian process to the magnitudes of earthquakes and looked for a
 <img src="plots/TracePlotsBayArea2.jpeg" />
 
 
-# Time Modeling
+## Time Modeling
 
 Modeling this dataset with regards to time was also very difficult. There are lots of earthquakes, and the time relationship does not seem very obvious. Just looking at the time component of the data does not seem to achieve any valuable insights. Starting with the series for earthquakes in Chile from 2004 to 2017, the following plots are obtained:
 
@@ -440,6 +440,6 @@ model3 %>% residuals() %>% ggtsdisplay(points = F,
 
 # Future Considerations
 
-There is much more left to be explored with this dataset. For the sake of this project, we focused on looking for patterns in magnitudes, rather than counts or occurences. An interesting analysis could definitely be done looking at occurences of earthquakes across time and space. In addition, we did build a large spatial model due to time constraints on our project. Maybe looking at other certain parts of the world would have other more obvious spatial or temporal patterns. We could also look into applying further models that we did not necessarily cover in this class. We also learned that applying that spatio-temporal statistics to real data sets is complicated, frustrating, and time consuming. 
+There is much more left to be explored with this dataset. For the sake of this project, we focused on looking for patterns in magnitudes, rather than counts or occurences. An interesting analysis could definitely be done looking at occurences of earthquakes across time and space. In addition, we did build a large spatial model due to time constraints on our project. Maybe looking at other certain parts of the world would have other more obvious spatial or temporal patterns. We could also look into applying further models that we did not necessarily cover in this class. We also learned that applying spatio-temporal statistics to real data sets is complicated, frustrating, and time consuming. 
 
 
