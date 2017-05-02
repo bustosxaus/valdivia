@@ -11,11 +11,13 @@ If we could predict the time, location, and size of earthquakes, it would be ver
 
 The original data set comes from https://kaggle.com/usgs/earthquake-database, and it contains all earthquakes with a magnitude greater than 4.5. After finding the reference for this dataset, at https://earthquake.usgs.gov/earthquakes/search/, we were able to pull different queries of years, magnitudes, and areas, so we could further explore the data on earthquakes. Because the data is individual points, we are using models that are based on point-reference data. 
 
-Different datasets were used for various approaches. the world data set is the one from kaggle that covers 1965-2016 with magnitudes greater than 4.5. The bay area data set covers about 10 years of data from April 28, 2007 until May 1, 2017 set to a rectangle of the San Francisco bay area, which is Latitude: [36.94, 37.79] and Longitude: [-122.57, -121.75]. The magnitudes are restricted to grater than 2.5. The California/Mexico dataset includes California going down to the Northern part of Mexico and covers data from April 21, 2012 to April 28, 2017. The Chile dataset includes the area around Chile and also covers data from April 21, 2012 to April 28, 2017. 
+Different datasets were used for various approaches. The world data set is the one from kaggle.com that covers 1965-2016 with magnitudes greater than 4.5. The bay area data set covers about 10 years of data from April 28, 2007 until May 1, 2017 set to a rectangle of the San Francisco bay area, which is Latitude: [36.94, 37.79] and Longitude: [-122.57, -121.75]. These magnitudes are restricted to grater than 2.5. The California/Mexico dataset includes California going down to the Northern part of Mexico and covers data from April 21, 2012 to April 28, 2017. The Chile dataset includes the area around Chile and also covers data from April 21, 2012 to April 28, 2017. 
 
 The measurement of magnitudes of earthquakes is also complicated as a unit of measurement. The scale is based on a logarithmic scale, and there are multiple ways to measure it based on seismic activity. For the sake of this project, various measurements of magnitude were treated equally. 
 
 # Exploratory Data Analysis 
+
+Some exploratory data analyis was done on the locations of earthquakes as well as on the few variables in the data set. The maps use a rectangular projection and the axes are set to a ratio of 1.3 to show the maps.
 
 ```{r, message=FALSE, warning=FALSE}
 library(spBayes)
@@ -142,11 +144,11 @@ grid.arrange(chile_ggplot, cali_ggplot, nrow = 1,
              top = "Earthquakes 1965-2016, Magnitudes > 4.5")
 ```
 
-From this plot, it looks like Chile has more bigger earthquakes than California does. 
+These two plots show a similar area. From this plot, it looks like Chile has more bigger earthquakes than California does. 
 
 ### Indonesia
 
-Looking at Indonesisa because the interesting shape in the faults.
+Looking at Indonesisa because there is interesting shape in the fault lines.
 
 ```{r, message=FALSE, warning=FALSE}
 # subset indonesia
@@ -281,7 +283,7 @@ Depth of the earthquake and magnitude don't seem to have a very obvious relation
 
 ## EDA: Hierarchical Clustering
 
-Only using latitude and longitude as covariates for clustering:
+As a method of EDA, hierarchical clustering was used to cluster earthquakes together. There may be interesting results in seeing the fault lines or how these earthquakes are clustered togehter. Hierachical clustering is better than other clustering methods for points that are close together that should be clustered together. The number of clusters needs to be specified, and this number was played around with. The number 6 was chosen to show for exploratory purposes. Only using latitude and longitude as covariates for clustering:
 
 ```{r}
 fault_line = all %>%
@@ -348,9 +350,9 @@ Next we fit a Gaussian process to the magnitudes of earthquakes and looked for a
 
 <img src="plots/BayAreaMap.jpeg" /> 
 
-<img src="plots/TracePlotsBayArea1.jpeg" /> 
+<img src="plots/TracePlot1.jpeg" /> 
  
-<img src="plots/TracePlotsBayArea2.jpeg" />
+<img src="plots/TracePlot2.jpeg" />
 
 
 ## Time Modeling
