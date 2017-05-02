@@ -11,7 +11,7 @@ If we could predict the time, location, and size of earthquakes, it would be ver
 
 The original data set comes from https://kaggle.com/usgs/earthquake-database, and it contains all earthquakes with a magnitude greater than 4.5. After finding the reference for this dataset, at https://earthquake.usgs.gov/earthquakes/search/, we were able to pull different queries of years, magnitudes, and areas, so we could further explore the data on earthquakes. Because the data is individual points, we are using models that are based on point-reference data. 
 
-Different datasets were used for various approaches. The world data set is the one from kaggle.com that covers 1965-2016 with magnitudes greater than 4.5. The bay area data set covers about 10 years of data from April 28, 2007 until May 1, 2017 set to a rectangle of the San Francisco bay area, which is Latitude: [36.94, 37.79] and Longitude: [-122.57, -121.75]. These magnitudes are restricted to grater than 2.5. The California/Mexico dataset includes California going down to the Northern part of Mexico and covers data from April 21, 2012 to April 28, 2017. The Chile dataset includes the area around Chile and also covers data from April 21, 2012 to April 28, 2017. 
+Different datasets were used for various approaches. The world data set is the one from kaggle.com that covers 1965-2016 with magnitudes greater than 4.5. The bay area data set covers about 10 years of data from April 28, 2007 until May 1, 2017 set to a rectangle of the San Francisco bay area, which is Latitude: [36.94, 37.79] and Longitude: [-122.57, -121.75]. These magnitudes are restricted to greater than 2.5. The California/Mexico dataset includes California going down to the Northern part of Mexico and covers data from April 21, 2012 to April 28, 2017. The Chile dataset includes the area around Chile and also covers data from April 21, 2012 to April 28, 2017. 
 
 The measurement of magnitudes of earthquakes is also complicated as a unit of measurement. The scale is based on a logarithmic scale, and there are multiple ways to measure it based on seismic activity. For the sake of this project, various measurements of magnitude were treated equally. 
 
@@ -342,17 +342,36 @@ Although the p-value for depth is small because of the large number of points, t
 
 Next we fit a Gaussian process to the magnitudes of earthquakes and looked for a spatial relationship in certain areas. The difficulty here is having too much data to build a spatial model with enough time to run. In addition, there are so many earthquakes below 2.5 that make it computationally infeasible, and cutting the magnitude at certain values seems arbitrary. However, we will cut the magnitudes off at certain values in order to procede. The code for the spatial models can be found in another .R script files in the repository. 
 
-### California/Mexico 5 years, Mag > 4.5
+We first fit a spatial point process to earthquakes occuring only in the Bay Area of California. We begin by calculating Moran's I for earthquake magnitude. The Moran's I of -0.0026 is very small and indicates that there is probably no spatial relationship in earthquake magnitudes. We continue with the spatial modelling process anyways to test this assertion and to compare the results to the regular linear regression. Next, we plot the variogram of the earthquake magnitudes in this region. 
 
-<img src="plots/Greater_than_45.jpeg" />
+### Variogram
 
-### Bay Area 10 years, Mag > 2.5
+<img src="plots/bayarea_variogram.jpeg" />
 
-<img src="plots/BayAreaMap.jpeg" /> 
+The variogram agrees with Moran's I in that they both indicate that there is probably no spatial correlation. We will use the variogram to inform the starting values for our Bayesian sampler for the nugget, the sill, and the range. Using the variogram in this way will help our sampler converge more quickly. We set the nugget equal to .1, the sill to .13, and the range to .1. We then fit our model and examine the traceplots to ensure convergence.
+
+### Sampler Traceplots
 
 <img src="plots/TracePlot1.jpeg" /> 
  
 <img src="plots/TracePlot2.jpeg" />
+
+From our traceplots, we are confident that our sampler has converged. We can also see how accurate our estimates from the variogram compare for the nugget, sill, and range. The nugget is equivalent to $\sigma^2$, the sill is equivalent to $\sigma^2 + \tau^2$, and the range is equivalent to $\phi$. The sampler disagrees with our estimate for $\sigma^2$. This is most likely due to fitting a spatial model to data that has no evidence of having a spatial component. We can also see that the regression coefficients for both the intercept and depth are very similar to the non-spatial linear regression model. Next we plot the predicted surface of our spatial model:
+
+### Bay Area 10 years, Mag > 2.5
+
+<img src="plots/BayAreaMap.jpeg" />
+
+From this plot, it appears as though there may be a very slight spatial relationship for earthquake magnitude. We also see that the scale of the plot is very narrow, indicating that the differences are at most minor. We repeat the same process for the entire state of California and some of Mexico. We display the predicted spatial surface for this as well. 
+
+### California/Mexico 5 years, Mag > 4.5
+
+<img src="plots/Greater_than_45.jpeg" />
+
+We see the same issues for this plot as we saw in the plot of only the bay area.
+
+Overall, after fitting a spatial point process model, we conclude that the data does not have any significant spatial correlation. This agrees with both Moran's I and our variogram.
+
 
 
 ## Time Modeling
