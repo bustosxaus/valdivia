@@ -115,7 +115,7 @@ d = dist(coords) %>%
 
 # Calculating and plotting the variogram
 variog(coords = coords, data = cali_samp$mag, messages = FALSE,
-        uvec = seq(0, max(d)/2, length.out = 25)) %>%
+        uvec = seq(0, max(d)/2, length.out = 50)) %>%
    plot()
 
 # Number of observations in the data
@@ -138,13 +138,13 @@ p = ncol(model_matrix)
 beta_cov = diag(1000, p)
 
 # Starting values for our Bayesian sampler
-starting = list(phi = 3/3, sigma.sq = 1, tau.sq = 1)
+starting = list(phi = .1, sigma.sq = .03, tau.sq = .1)
 # Tuning values
 tuning = list("phi" = 0.03, "sigma.sq" = 0.03, "tau.sq" = 0.03)
 # Priors for our Bayesian Sampler
 priors = list(
   beta.Norm = list(rep(0, p), beta_cov),
-  phi.Unif = c(max_range, 6),
+  phi.Unif = c(.01, 3),
   sigma.sq.IG = c(2, 2),
   tau.sq.IG = c(2, 2)
 )
