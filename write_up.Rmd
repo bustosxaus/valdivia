@@ -463,4 +463,13 @@ model3 %>% residuals() %>% ggtsdisplay(points = F,
 
 There is much more left to be explored with this dataset. For the sake of this project, we focused on looking for patterns in magnitudes, rather than counts or occurences. An interesting analysis could definitely be done looking at occurences of earthquakes across time and space. In addition, we did build a large spatial model due to time constraints on our project. Maybe looking at other certain parts of the world would have other more obvious spatial or temporal patterns. We could also look into applying further models that we did not necessarily cover in this class. We also learned that applying spatio-temporal statistics to real data sets is complicated, frustrating, and time consuming. 
 
+# References
+
+kaggle dataset: https://kaggle.com/usgs/earthquake-database
+
+search for all other earthquakes: https://earthquake.usgs.gov/earthquakes/search/
+
+wikipedia sources on magnitude:
+https://en.wikipedia.org/wiki/Richter_magnitude_scale
+https://en.wikipedia.org/wiki/Moment_magnitude_scale
 
