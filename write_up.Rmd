@@ -298,8 +298,8 @@ fault_line$clusterCut <- cutree(clusters, 6)
 clusterplot1 = ggplot(fault_line, aes(Longitude, Latitude, color = factor(clusterCut))) + 
   geom_point(alpha = 0.4, size = .5) +
   coord_fixed(1.3) +
-  scale_color_discrete("")
-
+  scale_color_discrete("") +
+  ggtitle("Just Latitude/Longitude")
 clusterplot1
 ```
 
@@ -315,12 +315,13 @@ fault_line$clusterCut <- cutree(clusters, 6)
 clusterplot2 = ggplot(fault_line, aes(Longitude, Latitude, color = factor(clusterCut))) + 
   geom_point(alpha = 0.4, size = .5) +
   coord_fixed(1.3) + 
-  scale_color_discrete("")
+  scale_color_discrete("") +
+  ggtitle("Using Latitude/Longitude, Depth, and Magnitude")
 
 clusterplot2
 ```
 
-This clustering is interesting because based solely on this part of the map, we can see how adding depth and magnitude clustered together a few lines off the coast of Chile. Perhaps magnitude and depth might have spatial compenents. 
+This clustering is interesting because based solely on this part of the map, we can see how adding depth and magnitude clustered together a few lines off the coast of Chile. Perhaps magnitude and depth might have spatial compenents. Here, it looks like the spatial relationship involving magnitude and depth are based more on a spatial relationship following lines, not spatial relationships in all directions. This would be interesting to note for further investigation.
 
 # Modeling
 
